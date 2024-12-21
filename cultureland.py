@@ -1,19 +1,17 @@
 # 작업중입니다.
 
+import base64
+import json
+import os
 import re
 import httpx
-import time
-import math
-import json
-import base64
-import os
-from bs4 import BeautifulSoup
+from datetime import datetime
 from typing import Optional, Union
 from urllib import parse
-from datetime import datetime
-from pin import Pin
+from bs4 import BeautifulSoup
 from mTranskey import mTranskey
-from _types import VoucherResponse, VoucherResultOther, SpendHistory, CulturelandVoucher, BalanceResponse, CulturelandBalance, CulturelandCharge, UserInfoResponse, CulturelandUser, CulturelandMember, CashLogsResponse, CulturelandCashLog, CulturelandLogin
+from pin import Pin
+from _types import *
 
 class Cultureland:
     """
@@ -282,122 +280,143 @@ class Cultureland:
 
         return results[0] if len(results) == 1 else results
 
-    """
-    /**
-     * 컬쳐캐쉬를 사용해 컬쳐랜드상품권(모바일문화상품권)을 본인 번호로 선물합니다.
-     * @param amount 구매 금액 (최소 1천원부터 최대 5만원까지 100원 단위로 입력 가능)
-     * @param quantity 구매 수량 (최대 5개)
-     * @example
-     * // 5000원권 1장을 나에게 선물
-     * await client.gift(5000, 1);
-     * @returns 선물 결과
-     */
-    public async gift(amount: number, quantity = 1): Promise<CulturelandGift> {
-        if (!(await this.isLogin())) throw new CulturelandError("LoginRequiredError", "로그인이 필요한 서비스 입니다.");
+    async def gift(self, amount: int, quantity = 1):
+        """
+        컬쳐캐쉬를 사용해 컬쳐랜드상품권(모바일문화상품권)을 본인 번호로 선물합니다.
 
-        // 구매 금액이 조건에 맞지 않을 때
-        if (amount % 100 !== 0 || amount < 1000 || amount > 50000) throw new CulturelandError("RangeError", "구매 금액은 최소 1천원부터 최대 5만원까지 100원 단위로 입력 가능합니다.");
+        파라미터:
+            * amount (int): 구매 금액 (최소 1천원부터 최대 5만원까지 100원 단위로 입력 가능)
+            * quantity (int): 구매 수량 (최대 5개, default: 1)
 
-        // 구매 수량이 조건에 맞지 않을 때
-        if (quantity % 1 !== 0 || quantity < 1 || quantity > 5) throw new CulturelandError("RangeError", "구매 수량은 최소 1개부터 최대 5개까지 정수로 입력 가능합니다.");
+        ```py
+        # 5000원권 1장을 나에게 선물
+        gift = await client.gift(5000, 1)
 
-        // 유저정보 가져오기 (선물구매에 userKey 필요)
-        const userInfo = await this.getUserInfo();
+        print(str(gift.pin)) # 핀번호
+        print(gift.url) # 바코드 URL
+        ```
 
-        // 선행 페이지 요청을 보내지 않으면 잘못된 접근 오류 발생
-        await this.client.get("https://m.cultureland.co.kr/gft/gftPhoneApp.do");
+        반환값:
+            * pin (Pin): 선물 바코드 번호
+            * url (str): 선물 바코드 URL
+        """
 
-        // 내폰으로 전송 (본인 번호 가져옴)
-        const phoneInfoRequest = await this.client.post("https://m.cultureland.co.kr/cpn/getGoogleRecvInfo.json", new URLSearchParams({
-            sendType: "LMS",
-            recvType: "M",
-            cpnType: "GIFT"
-        }), {
-            headers: {
-                "Referer": "https://m.cultureland.co.kr/gft/gftPhoneApp.do"
+        if not await self.is_login():
+            raise Exception("로그인이 필요한 서비스 입니다.")
+
+        # 구매 금액이 조건에 맞지 않을 때
+        if amount % 100 != 0 or amount < 1000 or amount > 50000:
+            raise ValueError("구매 금액은 최소 1천원부터 최대 5만원까지 100원 단위로 입력 가능합니다.")
+
+        """
+        TODO: 구매 수량 2개 이상
+        # 구매 수량이 조건에 맞지 않을 때
+        if quantity < 1 or quantity > 5:
+            raise ValueError("구매 수량은 최소 1개부터 최대 5개까지 입력 가능합니다.")
+        """
+
+        # 선행 페이지 요청을 보내지 않으면 잘못된 접근 오류 발생
+        await self.__client.get("/gft/gftPhoneApp.do")
+
+        # 내폰으로 전송 (본인 번호 가져옴)
+        phone_info_request = await self.__client.post(
+            "/cpn/getGoogleRecvInfo.json",
+            data={
+                "sendType": "LMS",
+                "recvType": "M",
+                "cpnType": "GIFT"
+            },
+            headers={
+                "Referer": str(self.__client.base_url.join("/gft/gftPhoneApp.do"))
             }
-        });
+        )
 
-        const phoneInfo: PhoneInfoResponse = await phoneInfoRequest.json();
-        if (phoneInfo.errMsg !== "정상") {
-            if (phoneInfo.errMsg) throw new CulturelandError("LookupError", phoneInfo.errMsg);
-            else throw new CulturelandError("ResponseError", "잘못된 응답이 반환되었습니다.");
-        }
+        phone_info = PhoneInfoResponse(phone_info_request.json())
+        if phone_info.errMsg != "정상":
+            if not phone_info.errMsg:
+                raise Exception("잘못된 응답이 반환되었습니다.")
+            else:
+                raise Exception(phone_info.errMsg)
 
-        const sendGiftRequest = await this.client.post("https://m.cultureland.co.kr/gft/gftPhoneCashProc.do", new URLSearchParams({
-            revEmail: "",
-            sendType: "S",
-            userKey: userInfo.userKey!.toString(),
-            limitGiftBank: "N",
-            bankRM: "OK",
-            giftCategory: "M",
-            quantity: quantity.toString(),
-            amount: amount.toString(),
-            chkLms: "M",
-            revPhone: phoneInfo.hpNo1 + phoneInfo.hpNo2 + phoneInfo.hpNo3,
-            paymentType: "cash",
-            agree: "on"
-        }), {
-            redirect: "manual"
-        });
+        send_gift_request = await self.__client.post(
+            "/gft/gftPhoneCashProc.do",
+            data={
+                "revEmail": "",
+                "sendType": "S",
+                "userKey": self.__user_info.user_key,
+                "limitGiftBank": "N",
+                "bankRM": "OK",
+                "giftCategory": "M",
+                "quantity": quantity,
+                "amount": amount,
+                "chkLms": "M",
+                "revPhone": phone_info.hpNo1 + phone_info.hpNo2 + phone_info.hpNo3,
+                "paymentType": "cash",
+                "agree": "on"
+            },
+            follow_redirects=False
+        )
 
-        const giftResultRequest = await this.client.get("https://m.cultureland.co.kr" + sendGiftRequest.headers.get("location"));
+        gift_result_request = await self.__client.get(send_gift_request.headers.get("location")) # 선물 결과 받아오기
+        gift_result = gift_result_request.text
 
-        const giftResult: string = await giftResultRequest.text(); // 선물 결과 받아오기
+        # 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가 완료되었습니다.
+        if "<strong> 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가<br />완료되었습니다.</strong>" in gift_result:
+            # 바코드의 코드 (URL 쿼리: code)
+            barcode_regex = re.compile('<input type="hidden" id="barcodeImage"      name="barcodeImage"       value="https:\\/\\/m\\.cultureland\\.co\\.kr\\/csh\\/mb\\.do\\?code=([\\w/+=]+)" \\/>')
+            barcode_code = barcode_regex.search(gift_result)
+            if barcode_code is None:
+                raise Exception("선물 결과에서 바코드 URL을 찾을 수 없습니다.")
 
-        // 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가 완료되었습니다.
-        if (giftResult.includes("<strong> 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가<br />완료되었습니다.</strong>")) {
-            // 바코드의 코드 (URL 쿼리: code)
-            const barcodeCode = giftResult.match(/<input type="hidden" id="barcodeImage"      name="barcodeImage"       value="https:\/\/m\.cultureland\.co\.kr\/csh\/mb\.do\?code=([\w/+=]+)" \/>/)?.[1];
-            if (!barcodeCode) throw new CulturelandError("ResponseError", "선물 결과에서 바코드 URL을 찾을 수 없습니다.");
+            # 핀번호(바코드 번호)를 가져오기 위해 바코드 정보 요청
+            barcode_path = "/csh/mb.do?code=" + barcode_code
+            barcode_data_request = await self.__client.get(barcode_path)
+            barcode_data = barcode_data_request.text
 
-            // 핀번호(바코드 번호)를 가져오기 위해 바코드 정보 요청
-            const barcodePath = "/csh/mb.do?code=" + barcodeCode;
-            const barcodeDataRequest = await this.client.get("https://m.cultureland.co.kr" + barcodePath);
+            # 선물 결과에서 핀번호(바코드 번호) 파싱
+            pin_code = barcode_data.split("<span>바코드번호</span>")[1].split("</span>")[0].split("<span>")[1]
 
-            const barcodeData: string = await barcodeDataRequest.text();
+            return CulturelandGift(
+                pin=Pin(pin_code),
+                url=("https://m.cultureland.co.kr" + barcode_path)
+            )
 
-            // 선물 결과에서 핀번호(바코드 번호) 파싱
-            const pinCode: string = barcodeData
-                .split("<span>바코드번호</span>")[1]
-                .split("</span>")[0]
-                .split("<span>")[1];
+        # 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가 실패 하였습니다.
+        fail_reason_regex = re.compile('<dt class="two">실패 사유 <span class="right">(.*)<\\/span><\\/dt>')
+        fail_reason = fail_reason_regex.search(gift_result)
+        if fail_reason is None:
+            raise Exception("잘못된 응답이 반환되었습니다.")
 
-            return {
-                pin: new Pin(pinCode),
-                url: "https://m.cultureland.co.kr" + barcodePath
-            };
-        }
+        raise Exception("PurchaseError", fail_reason[1])
 
-        // 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가 실패 하였습니다.
-        const failReason = giftResult.match(/<dt class="two">실패 사유 <span class="right">(.*)<\/span><\/dt>/)?.[1]?.replace(/<br>/g, " ");
-        if (failReason) throw new CulturelandError("PurchaseError", failReason);
-        else throw new CulturelandError("ResponseError", "잘못된 응답이 반환되었습니다.");
-    }
+    async def get_gift_limit(self):
+        """
+        선물하기 API에서 선물 한도를 가져옵니다.
 
-    /**
-     * 선물하기 API에서 선물 한도를 가져옵니다.
-     * @example
-     * await client.getGiftLimit();
-     * @returns 선물 한도
-     */
-    public async getGiftLimit(): Promise<CulturelandGiftLimit> {
-        if (!(await this.isLogin())) throw new CulturelandError("LoginRequiredError", "로그인이 필요한 서비스 입니다.");
+        ```py
+        await client.get_gift_limit()
+        ```
 
-        const limitInfoRequest = await this.client.post("https://m.cultureland.co.kr/gft/chkGiftLimitAmt.json");
+        반환값:
+            * remain (int): 잔여 선물 한도
+            * limit (int): 최대 선물 한도
+        """
+        if not await self.is_login():
+            raise Exception("로그인이 필요한 서비스 입니다.")
 
-        const limitInfo: GiftLimitResponse = await limitInfoRequest.json();
-        if (limitInfo.errMsg !== "정상") {
-            if (limitInfo.errMsg) throw new CulturelandError("LookupError", limitInfo.errMsg);
-            else throw new CulturelandError("ResponseError", "잘못된 응답이 반환되었습니다.");
-        }
+        limit_info_request = await self.__client.post("/gft/chkGiftLimitAmt.json")
 
-        return {
-            remain: limitInfo.giftVO.ccashRemainAmt,
-            limit: limitInfo.giftVO.ccashLimitAmt
-        };
-    }
-    """
+        limit_info = GiftLimitResponse(limit_info_request.json())
+        if limit_info.errMsg != "정상":
+            if not limit_info.errMsg:
+                raise Exception("잘못된 응답이 반환되었습니다.")
+            else:
+                raise Exception(limit_info.errMsg)
+
+        return CulturelandGiftLimit(
+            remain=limit_info.giftVO.ccashRemainAmt,
+            limit=limit_info.giftVO.ccashLimitAmt
+        )
 
     async def get_user_info(self):
         """
@@ -574,7 +593,7 @@ class Cultureland:
         # KeepLoginConfig 쿠키를 사용할 경우 hCaptcha 값의 유효성을 확인하지 않는 취약점 사용
         self.__client.cookies.set(
             "KeepLoginConfig",
-            base64.urlsafe_b64encode(os.urandom(48)) if is_idp_login else keep_login_info,
+            base64.urlsafe_b64encode(os.urandom(48)).decode() if is_idp_login else keep_login_info,
             "m.cultureland.co.kr"
         )
 
@@ -584,12 +603,7 @@ class Cultureland:
             elif len(password) == 0:
                 raise ValueError("비밀번호를 입력해 주십시오.")
         else:
-            login_main_request = await self.__client.get(
-                "/mmb/loginMain.do",
-                headers={
-                    "Referer": str(self.__client.base_url.join("/index.do"))
-                }
-            )
+            login_main_request = await self.__client.get("/mmb/loginMain.do")
 
             user_id_regex = re.compile('<input type="text" id="txtUserId" name="userId" value="(\\w*)" maxlength="12" oninput="maxLengthCheck\\(this\\);" placeholder="아이디" >')
             user_id_match = user_id_regex.search(login_main_request.text)
@@ -636,7 +650,7 @@ class Cultureland:
             if not error_message:
                 raise Exception("잘못된 응답이 반환되었습니다.")
             else:
-                raise Exception(error_message.replace("\\n\\n", ". "))
+                raise Exception(error_message[1].replace("\\n\\n", ". "))
 
         # 컬쳐랜드 로그인 정책에 따라 로그인이 제한된 경우
         if login_request.headers.get("location") == "/cmp/authConfirm.do":
@@ -660,7 +674,7 @@ class Cultureland:
         if not keep_login_info:
             raise Exception("잘못된 응답이 반환되었습니다.")
 
-        self.__userInfo = await self.get_user_info()
+        self.__user_info = await self.get_user_info()
 
         # 변수 저장
         self.__id = _id

@@ -1,5 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal, Optional
+from pin import Pin
 
 class VoucherResultItem:
     LevyTime: str
@@ -157,7 +158,6 @@ class CulturelandBalance:
         """
         return self.__total_balance
 
-
 class CulturelandCharge:
     def __init__(self, message: Literal["충전 완료", "상품권지갑 보관", "잔액이 0원인 상품권", "상품권 번호 불일치", "등록제한(20번 등록실패)"], amount: int):
         self.__message = message
@@ -179,8 +179,8 @@ class CulturelandCharge:
         """
         return self.__amount
 
-"""
-export interface PhoneInfoResponse {
+@dataclass
+class PhoneInfoResponse:
     recvType: str
     email2: str
     errCd: str
@@ -190,141 +190,154 @@ export interface PhoneInfoResponse {
     hpNo3: str
     errMsg: str
     sendType: str
-}
 
-export interface CulturelandGift {
-    /**
-     * 선물 바코드 번호
-     */
-    pin: Pin;
-    /**
-     * 선물 바코드 URL
-     */
-    url: str
-}
+class CulturelandGift:
+    def __init__(self, pin: Pin, url: str):
+        self.__pin = pin
+        self.__url = url
 
-export interface GiftLimitResponse {
+    @property
+    def pin(self):
+        """
+        선물 바코드 번호
+        """
+        return self.__pin
+
+    @property
+    def url(self):
+        """
+        선물 바코드 URL
+        """
+        return self.__url
+
+class GiftVO:
+    maxAmount: int
+    custCd: None
+    balanceAmt: int
+    safeAmt: int
+    cashGiftRemainAmt: int
+    cashGiftSumGift: int
+    cashGiftNoLimitYn: Literal["Y", "N"]
+    cashGiftNoLimitUserYn: str
+    cashGiftLimitAmt: int
+    cashGiftMGiftRemainDay: int
+    cashGiftMGiftRemainMon: int
+    toUserId: None
+    toUserNm: None
+    toMsg: None
+    transType: None
+    timestamp: None
+    certValue: None
+    revPhone: None
+    paymentType: None
+    sendType: None
+    sendTypeNm: None
+    giftCategory: None
+    sendTitl: None
+    amount: int
+    quantity: int
+    controlCd: None
+    lgControlCd: None
+    contentsCd: None
+    contentsNm: None
+    svrGubun: None
+    payType: None
+    levyDate: None
+    levyTime: None
+    levyDateTime: None
+    genreDtl: None
+    faceValue: int
+    sendCnt: int
+    balance: int
+    state: None
+    lgState: None
+    dtlState: None
+    selType: None
+    strPaymentType: None
+    strSendType: None
+    strRcvInfo: None
+    appUseYn: None
+    reSendYn: None
+    reSendState: None
+    strReSendState: None
+    cnclState: None
+    strCnclState: None
+    page: int
+    pageSize: int
+    totalCnt: int
+    totalSum: int
+    totalCntPage: int
+    isLastPageYn: None
+    reSendType: None
+    reSvrGubun: None
+    aESImage: None
+    sendUserId: None
+    sendUserNm: None
+    rcvUserKey: None
+    rcvUserID: None
+    rcvName: None
+    rcvHpno: None
+    sendMsg: None
+    giftType: None
+    sendDate: None
+    receiveDate: None
+    expireDate: None
+    cancelDate: None
+    cancelType: None
+    regdate: None
+    waitPage: int
+    sendPage: int
+    waitCnt: int
+    cancelCnt: int
+    transCnt: int
+    successCnt: int
+    nbankMGiftRemainDay: int
+    nbankNoLimitUserYn: str
+    nbankNoLimitYn: Literal["Y", "N"]
+    ccashNoLimitUserYn: str
+    ccashRemainAmt: int
+    ccashMGiftRemainMon: int
+    ccashMGiftRemainDay: int
+    nbankRemainAmt: int
+    rtimeNoLimitUserYn: str
+    ccashNoLimitYn: Literal["Y", "N"]
+    nbankMGiftRemainMon: int
+    rtimeMGiftRemainMon: int
+    rtimeMGiftRemainDay: int
+    rtimeNoLimitYn: Literal["Y", "N"]
+    rtimeRemainAmt: int
+    nbankLimitAmt: int
+    rtimeSumGift: int
+    ccashLimitAmt: int
+    nbankSumGift: int
+    nbankSumVacnt: int
+    rtimeLimitAmt: int
+    ccashSumGift: int
+
+@dataclass
+class GiftLimitResponse:
     errCd: str
-    giftVO: {
-        maxAmount: number;
-        custCd: null;
-        balanceAmt: number;
-        safeAmt: number;
-        cashGiftRemainAmt: number;
-        cashGiftSumGift: number;
-        cashGiftNoLimitYn: Literal["Y", "N"]
-        cashGiftNoLimitUserYn: str
-        cashGiftLimitAmt: number;
-        cashGiftMGiftRemainDay: number;
-        cashGiftMGiftRemainMon: number;
-        toUserId: null;
-        toUserNm: null;
-        toMsg: null;
-        transType: null;
-        timestamp: null;
-        certValue: null;
-        revPhone: null;
-        paymentType: null;
-        sendType: null;
-        sendTypeNm: null;
-        giftCategory: null;
-        sendTitl: null;
-        amount: number;
-        quantity: number;
-        controlCd: null;
-        lgControlCd: null;
-        contentsCd: null;
-        contentsNm: null;
-        svrGubun: null;
-        payType: null;
-        levyDate: null;
-        levyTime: null;
-        levyDateTime: null;
-        genreDtl: null;
-        faceValue: number;
-        sendCnt: number;
-        balance: number;
-        state: null;
-        lgState: null;
-        dtlState: null;
-        selType: null;
-        strPaymentType: null;
-        strSendType: null;
-        strRcvInfo: null;
-        appUseYn: null;
-        reSendYn: null;
-        reSendState: null;
-        strReSendState: null;
-        cnclState: null;
-        strCnclState: null;
-        page: number;
-        pageSize: number;
-        totalCnt: number;
-        totalSum: number;
-        totalCntPage: number;
-        isLastPageYn: null;
-        reSendType: null;
-        reSvrGubun: null;
-        aESImage: null;
-        sendUserId: null;
-        sendUserNm: null;
-        rcvUserKey: null;
-        rcvUserID: null;
-        rcvName: null;
-        rcvHpno: null;
-        sendMsg: null;
-        giftType: null;
-        sendDate: null;
-        receiveDate: null;
-        expireDate: null;
-        cancelDate: null;
-        cancelType: null;
-        regdate: null;
-        waitPage: number;
-        sendPage: number;
-        waitCnt: number;
-        cancelCnt: number;
-        transCnt: number;
-        successCnt: number;
-        nbankMGiftRemainDay: number;
-        nbankNoLimitUserYn: str
-        nbankNoLimitYn: Literal["Y", "N"]
-        ccashNoLimitUserYn: str
-        ccashRemainAmt: number;
-        ccashMGiftRemainMon: number;
-        ccashMGiftRemainDay: number;
-        nbankRemainAmt: number;
-        rtimeNoLimitUserYn: str
-        ccashNoLimitYn: Literal["Y", "N"]
-        nbankMGiftRemainMon: number;
-        rtimeMGiftRemainMon: number;
-        rtimeMGiftRemainDay: number;
-        rtimeNoLimitYn: Literal["Y", "N"]
-        rtimeRemainAmt: number;
-        nbankLimitAmt: number;
-        rtimeSumGift: number;
-        ccashLimitAmt: number;
-        nbankSumGift: number;
-        nbankSumVacnt: number;
-        rtimeLimitAmt: number;
-        ccashSumGift: number;
-    };
+    giftVO: GiftVO
     errMsg: str
-}
 
-export interface CulturelandGiftLimit {
-    /**
-     * 잔여 선물 한도
-     */
-    remain: number;
-    /**
-     * 최대 선물 한도
-     */
-    limit: number;
-}
+class CulturelandGiftLimit:
+    def __init__(self, remain: int, limit: int):
+        self.__remain = remain
+        self.__limit = limit
 
+    @property
+    def remain(self):
+        """
+        잔여 선물 한도
+        """
+        return self.__remain
 
-"""
+    @property
+    def limit(self):
+        """
+        최대 선물 한도
+        """
+        return self.__limit
 
 @dataclass
 class UserInfoResponse:

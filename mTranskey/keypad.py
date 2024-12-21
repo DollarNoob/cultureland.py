@@ -22,7 +22,7 @@ NUMBER_KEY_HASHES = [
     "da4d4c4be55781ce54f88e1f5550e72d", # 9
     "6fc0f70702615ba21a5cdd09ec45c3a0" # empty
 ]
-BLANK_KEY_HASH = "" # qwerty 키보드 빈칸
+BLANK_KEY_HASH = "10f261e7833e4df8108698d0ac802f89" # qwerty 키보드 빈칸
 
 class Keypad:
     def __init__(self, transkey_data: dict, servlet_data: dict, client: httpx.Client, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type: str):

@@ -1,18 +1,23 @@
-import cultureland
-import os
-import mTranskey
-import mTranskey.transkey
-import httpx
 import asyncio
+import os
 from dotenv import load_dotenv
+from cultureland import Cultureland
 from pin import Pin
 
 load_dotenv()
 
 async def main():
-    client = cultureland.Cultureland()
+    client = Cultureland()
 
-    login = await client.login(os.getenv("CULTURELAND_KEEP_LOGIN_INFO"))
+    print("Using IDP")
+    login = await client.login(os.getenv("CULTURELAND_ID"), os.getenv("CULTURELAND_PASSWORD"))
+    print("KeepLoginInfo:", login.keep_login_info)
+    print("User ID:", login.user_id)
+
+    client.client.cookies.clear()
+
+    print("Using KeepLoginInfo")
+    login = await client.login(login.keep_login_info)
     print("KeepLoginInfo:", login.keep_login_info)
     print("User ID:", login.user_id)
 
