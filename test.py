@@ -5,6 +5,7 @@ import mTranskey.transkey
 import httpx
 import asyncio
 from dotenv import load_dotenv
+from pin import Pin
 
 load_dotenv()
 
@@ -14,6 +15,6 @@ async def main():
     print("is currently logged in:", await client.is_login())
     balance = await client.get_balance()
     print("balance:", balance.__dict__)
-    print("charge:", await client.charge())
+    print("charge:", await client.charge(Pin("3110-1234-1234-5678")))
 
 asyncio.run(main())

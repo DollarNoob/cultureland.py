@@ -84,7 +84,9 @@ class Pin:
         if len(pin_matches) == 0:
             raise ValueError("존재하지 않는 상품권입니다.")
 
-        parts = (pin_matches[1], pin_matches[2], pin_matches[3], pin_matches[4])
+        pin_matches = pin_matches[0] # regex에 맞는 첫번째 핀번호
+
+        parts = (pin_matches[0], pin_matches[1], pin_matches[2], pin_matches[3])
         return parts
 
     @staticmethod
@@ -105,10 +107,12 @@ class Pin:
 
         pin_regex = re.compile("(\\d{4})\\D*(\\d{4})\\D*(\\d{4})\\D*(\\d{6}|\\d{4})")
         pin_matches = pin_regex.findall(pin) # 1111!@#!@#@#@!#!@#-1111-1111DSSASDA-1111와 같은 형식도 PASS됨.
-        if pin_matches is None: # 핀번호 regex에 맞지 않는다면 검증 실패
+        if len(pin_matches) == 0: # 핀번호 regex에 맞지 않는다면 검증 실패
             return False
 
-        parts: tuple[str, str, str, str] = (pin_matches[1], pin_matches[2], pin_matches[3], pin_matches[4])
+        pin_matches = pin_matches[0] # regex에 맞는 첫번째 핀번호
+
+        parts: tuple[str, str, str, str] = (pin_matches[0], pin_matches[1], pin_matches[2], pin_matches[3])
         if parts[0].startswith("416") or parts[0].startswith("4180"): # 핀번호가 416(컬쳐랜드상품권 구권) 또는 4180(컬쳐랜드상품권 신권)으로 시작한다면
             if len(parts[3]) != 4: # 마지막 핀번호 부분이 4자리가 아니라면 검증 실패
                 return False

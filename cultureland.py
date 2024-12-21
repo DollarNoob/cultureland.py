@@ -5,7 +5,8 @@ import httpx
 import time
 import math
 import json
-from typing import Optional
+from bs4 import BeautifulSoup
+from typing import Optional, Union
 from urllib import parse
 from datetime import datetime
 from pin import Pin
@@ -149,52 +150,82 @@ class Cultureland:
             total_balance=int(balance.myCash)
         )
 
-    async def charge(self):
-        await self.client.get("/csh/cshGiftCard.do")
+    async def charge(self, pins: Union[Pin, list[Pin]]):
+        if not await self.is_login():
+            raise Exception("로그인이 필요한 서비스 입니다.")
 
-        transkey = mTranskey(self.client)
+        if not isinstance(pins, list):
+            pins = [ pins ]
+
+        if len(pins) == 0 or len(pins) > 10:
+            raise ValueError("핀번호는 1개 이상, 10개 이하여야 합니다.")
+
+        only_mobile_vouchers = all(len(pin.parts[3]) == 4 for pin in pins) # 모바일문화상품권만 있는지
+
+        # 선행 페이지 요청을 보내지 않으면 잘못된 접근 오류 발생
+        await self.__client.get(
+            "/csh/cshGiftCard.do" if only_mobile_vouchers # 모바일문화상품권
+            else "/csh/cshGiftCardOnline.do" # 문화상품권(18자리)
+        ) # 문화상품권(18자리)에서 모바일문화상품권도 충전 가능, 모바일문화상품권에서 문화상품권(18자리) 충전 불가능
+
+        transkey = mTranskey(self.__client)
         servlet_data = await transkey.get_servlet_data()
 
-        inputs = {
+        payload = {
             "seedKey": transkey.encrypted_session_key,
             "initTime": servlet_data.get("init_time"),
             "transkeyUuid": transkey.transkey_uuid
         }
 
-        txtScr4 = "txtScr14"
+        for i in range(len(pins)):
+            pin = pins[i]
 
-        # <input type="password" name="{scr4}" id="{txtScr4}">
-        keypad = transkey.create_keypad(servlet_data, "number", txtScr4, "scr14")
-        keypad_layout = await keypad.get_keypad_layout()
-        [encrypted_pin, encrypted_hmac] = keypad.encrypt_password("4234", keypad_layout)
+            parts = pin.parts or ["", "", "", ""]
+            pin_count = i + 1 # scr0x이 아닌 scr1x부터 시작하기 때문에 1부터 시작
 
-        # inputs = {}
+            txtScr4 = f"txtScr{pin_count}4"
 
-        # scratch (핀번호)
-        inputs["scr11"] = "4180"
-        inputs["scr12"] = "2234"
-        inputs["scr13"] = "3234"
+            # <input type="password" name="{scr4}" id="{txtScr4}">
+            keypad = transkey.create_keypad(servlet_data, "number", txtScr4, f"scr{pin_count}4")
+            keypad_layout = await keypad.get_keypad_layout()
+            encrypted_pin, encrypted_hmac = keypad.encrypt_password(parts[3], keypad_layout)
 
-        # keyboard
-        inputs["keyIndex_" + txtScr4] = keypad.key_index
-        inputs["keyboardType_" + txtScr4] = keypad.keyboard_type + "Mobile"
-        inputs["fieldType_" + txtScr4] = keypad.field_type
+            # scratch (핀번호)
+            payload[f"scr{pin_count}1"] = parts[0]
+            payload[f"scr{pin_count}2"] = parts[1]
+            payload[f"scr{pin_count}3"] = parts[2]
 
-        # transkey
-        inputs["transkey_" + txtScr4] = encrypted_pin
-        inputs["transkey_HM_" + txtScr4] = encrypted_hmac
+            # keyboard
+            payload["keyIndex_" + txtScr4] = keypad.key_index
+            payload["keyboardType_" + txtScr4] = keypad.keyboard_type + "Mobile"
+            payload["fieldType_" + txtScr4] = keypad.field_type
 
-        charge_response = await self.client.post(
-            "/csh/cshGiftCardProcess.do", # 모바일문화상품권
-            data=inputs,
+            # transkey
+            payload["transkey_" + txtScr4] = encrypted_pin
+            payload["transkey_HM_" + txtScr4] = encrypted_hmac
+
+        charge_request = await self.__client.post(
+            "/csh/cshGiftCardProcess.do" if only_mobile_vouchers # 모바일문화상품권
+            else "/csh/cshGiftCardOnlineProcess.do", # 문화상품권(18자리)
+            data=payload,
             follow_redirects=False
         )
 
-        print(charge_response.status_code)
-        # return
-        charge_result_response = await self.client.get(charge_response.headers.get("location"))
+        charge_result_request = await self.__client.get(charge_request.headers.get("location")) # 충전 결과 받아오기
 
-        # const chargeResult: string = await chargeResultRequest.text(); // 충전 결과 받아오기
+        parsed_results = BeautifulSoup(charge_result_request.text, "html.parser") # 충전 결과 HTML 파싱
+        parsed_results = parsed_results.find("tbody").find_all("tr")
+
+        results = []
+        for i in range(len(pins)):
+            charge_result = parsed_results[i].find_all("td")
+
+            results.append({
+                "message": charge_result[2].text,
+                "amount": int(charge_result[3].text.replace(",", "").replace("원", ""))
+            })
+
+        return results[0] if len(results) == 1 else results
 
     async def is_login(self) -> bool:
         """
