@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import Literal
+from typing import Literal, Optional
 
 class VoucherResultItem:
     LevyTime: str
@@ -27,36 +27,90 @@ class VoucherResultOther:
     Balance: int
 
 class SpendHistory:
-    """
-    title (str): 내역 제목
-    merchant_name (str): 사용 가맹점 이름
-    amount (int): 사용 금액
-    timestamp (int): 사용 시각 (UNIX Timestamp)
-    """
-
     def __init__(self, title: str, merchant_name: str, amount: int, timestamp: int):
-       self.title = title
-       self.merchant_name = merchant_name
-       self.amount = amount
-       self.timestamp = timestamp
+       self.__title = title
+       self.__merchant_name = merchant_name
+       self.__amount = amount
+       self.__timestamp = timestamp
+
+    @property
+    def title(self):
+        """
+        내역 제목
+        """
+        return self.__title
+
+    @property
+    def merchant_name(self):
+        """
+        사용 가맹점 이름
+        """
+        return self.__merchant_name
+
+    @property
+    def amount(self):
+        """
+        사용 금액
+        """
+        return self.__amount
+
+    @property
+    def timestamp(self):
+        """
+        사용 시각 (Unix Timestamp)
+        """
+        return self.__timestamp
 
 class CulturelandVoucher:
-    """
-    amount (int): 상품권의 금액
-    balance (int): 상품권의 잔액
-    cert_no (str): 상품권의 발행번호 (인증번호)
-    created_date (str): 상품권의 발행일 | `20241231`
-    expiry_date (str): 상품권의 만료일 | `20291231`
-    spend_history (list[SpendHistory]): 상품권 사용 내역
-    """
-
     def __init__(self, amount: int, balance: int, cert_no: str, created_date: str, expiry_date: str, spend_history: list[SpendHistory]):
-        self.amount = amount
-        self.balance = balance
-        self.cert_no = cert_no
-        self.created_date = created_date
-        self.expiry_date = expiry_date
-        self.spend_history = spend_history
+        self.__amount = amount
+        self.__balance = balance
+        self.__cert_no = cert_no
+        self.__created_date = created_date
+        self.__expiry_date = expiry_date
+        self.__spend_history = spend_history
+
+    @property
+    def amount(self):
+        """
+        상품권의 금액
+        """
+        return self.__amount
+
+    @property
+    def balance(self):
+        """
+        상품권의 잔액
+        """
+        return self.__balance
+
+    @property
+    def cert_no(self):
+        """
+        상품권의 발행번호 (인증번호)
+        """
+        return self.__cert_no
+
+    @property
+    def created_date(self):
+        """
+        상품권의 발행일 | `20241231`
+        """
+        return self.__created_date
+
+    @property
+    def expiry_date(self):
+        """
+        상품권의 만료일 | `20291231`
+        """
+        return self.__expiry_date
+
+    @property
+    def spend_history(self):
+        """
+        상품권 사용 내역
+        """
+        return self.__spend_history
 
 @dataclass
 class BalanceResponse:
@@ -77,29 +131,55 @@ class BalanceResponse:
     limitCash: str
 
 class CulturelandBalance:
-    """
-    balance (int): 사용 가능 금액
-    safe_balance (int): 보관중인 금액 (안심금고)
-    total_balance (int): 총 잔액 (사용 가능 금액 + 보관중인 금액)
-    """
-
     def __init__(self, balance: int, safe_balance: int, total_balance: int):
-        self.balance = balance
-        self.safe_balance = safe_balance
-        self.total_balance = total_balance
+        self.__balance = balance
+        self.__safe_balance = safe_balance
+        self.__total_balance = total_balance
+
+    @property
+    def balance(self):
+        """
+        사용 가능 금액
+        """
+        return self.__balance
+
+    @property
+    def safe_balance(self):
+        """
+        보관중인 금액 (안심금고)
+        """
+        return self.__safe_balance
+
+    @property
+    def total_balance(self):
+        """
+        총 잔액 (사용 가능 금액 + 보관중인 금액)
+        """
+        return self.__total_balance
+
+
+class CulturelandCharge:
+    def __init__(self, message: Literal["충전 완료", "상품권지갑 보관", "잔액이 0원인 상품권", "상품권 번호 불일치", "등록제한(20번 등록실패)"], amount: int):
+        self.__message = message
+        self.__amount = amount
+
+    @property
+    def message(self):
+        """
+        성공 여부 메시지
+
+        `충전 완료` | `상품권지갑 보관` | `잔액이 0원인 상품권` | `상품권 번호 불일치` | `등록제한(20번 등록실패)`
+        """
+        return self.__message
+
+    @property
+    def amount(self):
+        """
+        충전 금액
+        """
+        return self.__amount
 
 """
-export interface CulturelandCharge {
-    /**
-     * 성공 여부 메시지
-     */
-    message: "충전 완료" | "상품권지갑 보관" | "잔액이 0원인 상품권" | "상품권 번호 불일치";
-    /**
-     * 충전 금액
-     */
-    amount: number;
-}
-
 export interface PhoneInfoResponse {
     recvType: str
     email2: str
@@ -243,192 +323,11 @@ export interface CulturelandGiftLimit {
     limit: number;
 }
 
-export interface ChangeCoupangCashResponse {
-    resultCd: str
-    resultMsg: str
-}
 
-export interface CulturelandChangeCoupangCash {
-    /**
-     * (전환 수수료 6%가 차감된) 전환된 금액
-     */
-    amount: number;
-}
+"""
 
-export interface ChangeSmileCashResponse {
-    resultCd: str
-    resultMsg: str
-}
-
-export interface CulturelandChangeSmileCash {
-    /**
-     * (전환 수수료 5%가 과금된) 과금된 금액
-     */
-    amount: number;
-}
-
-export interface CulturelandGooglePlay {
-    /**
-     * 기프트 코드 번호
-     */
-    pin: str
-    /**
-     * 자동 입력 URL
-     */
-    url: str
-    /**
-     * 카드번호
-     */
-    certNo: str
-}
-
-export interface GooglePlayBuyResponse {
-    errCd: str
-    pinBuyYn: Literal["Y", "N"]
-    errMsg: str
-}
-
-export interface GooglePlayHistoryResponse {
-    list: {
-        item: {
-            fee: str
-            reSendState: Literal["Y", "N"]
-            cnclState: Literal["Y", "N"]
-            strLevyDate: str
-            CertGroup: str
-            ContentsName: str
-            PurchaseCertNo: str
-            LevyTime: str
-            strMaskScrachNo: str
-            payType: "컬쳐캐쉬" | "신용카드";
-            strRcvInfo: str
-            ReceiveInfo: str
-            culturelandGiftNo: str
-            ReSend: str
-            culturelandGiftMaskNo: str
-            ExSubMemberCode: str
-            certGroup: str
-            FaceValue: str
-            strLevyTime: str
-            levyDateTime: str
-            ContentsCode: "GOOGLE";
-            Amount: str
-            ControlCode: str
-            PinSaleControlCode: str
-            cultureGiftFaceValue: str
-            RowNumber: str
-            CouponCode: str
-            GCSubMemberCode: str
-            CancelDate: str
-            ExMemberCode: str
-            State: str
-            SubMemberCode: str
-            googleDcUserHpCheck: Literal["Y", "N"]
-            MemberControlCode: str
-            CertNo: str
-            ScrachNo: str
-            LevyDate: str
-            cnclLmtDate: str
-        }
-    }[];
-    cpnVO: {
-        buyType: null,
-        cpgm: null;
-        couponNm: null;
-        contentsCd: null;
-        alertAmt: null;
-        couponAmt: null;
-        saleAmt: null;
-        comments: null;
-        agreeMsg: null;
-        serviceStatus: null;
-        tfsSeq: null;
-        hpNo1: null;
-        hpNo2: null;
-        hpNo3: null;
-        recvHP: null;
-        email1: null;
-        email2: null;
-        recvEmail: null;
-        sendType: null;
-        buyCoupon: null;
-        direction: null;
-        couponCode: null;
-        memberCd: null;
-        pinType: null;
-        agencyNm: null;
-        faceval: null;
-        safeBalance: null;
-        hp_no1: null;
-        hp_no2: null;
-        hp_no3: null;
-        phoneNumber: null;
-        prodNo: null;
-        tmpCLState: null;
-        res_code: null;
-        datasize: null;
-        salePercent: null;
-        saleBuyLimit: null;
-        isSale: 0;
-        balance: 0;
-        safeAmt: 0;
-        amount: 0;
-        arrCouponAmt: null;
-        arrSaleAmt: null;
-        arrSalePer: null;
-        arrBuyCoupon: null;
-        arrAlertAmt: null;
-        arrCouponCode: null;
-        arrCouponName: null;
-        arrComments: null;
-        couponCodeType: null;
-        remainMAmount: null;
-        remainDAmount: null;
-        remainMAmountUser: null;
-        remainDAmountUser: null;
-        maxMAmountUser: null;
-        maxDAmountUser: null;
-        feeType: null;
-        quantity: 0;
-        page: number;
-        pageSize: number;
-        buyCnt: number;
-        totalCnt: number;
-        feeAmount: 0;
-        fee: "0";
-        isLastPageYn: Literal["Y", "N"]
-        controlCd: null;
-        subMemberCd: null;
-        pinSaleControlCd: null;
-        recvInfo: null;
-        code1: null;
-        code2: null;
-        code3: null;
-        code4: null;
-        code5: null;
-        recvType: null;
-        couponContent: null;
-        oriAmount: null;
-        isCulSale: 0;
-        deliveryFee: 0;
-        deliveryType: "";
-        recvNm: "";
-        recvPost: "";
-        recvAddr1: "";
-        recvAddr2: "";
-        envelopeQty: 0;
-        billCheck: "";
-        isEvnFee: 0;
-        evnFee: "0";
-        evnFeeAmount: 0;
-        freefeeAmount: 0;
-        eventCode: null;
-        cpnType: "";
-        salePer: null;
-    }
-}
-
-export interface UserInfoResponse {
+@dataclass
+class UserInfoResponse:
     Del_Yn: Literal["Y", "N"]
     callUrl: str
     custCd: str
@@ -450,123 +349,209 @@ export interface UserInfoResponse {
     userId: str
     userKey: str
     Proc_Date: str
-    size: number;
+    size: int
     user_id: str
     succUrl: str
     userIp: str
     Mobile_Yn: Literal["Y", "N"]
     idx: str
     category: str
-}
 
-export interface CulturelandUser {
-    /**
-     * 휴대폰 번호
-     */
-    phone: str
-    /**
-     * 안심금고 레벨
-     */
-    safeLevel: number;
-    /**
-     * 안심금고 비밀번호 여부
-     */
-    safePassword: boolean;
-    /**
-     * 가입 시각
-     */
-    registerDate: number;
-    /**
-     * 컬쳐랜드 ID
-     */
-    userId: str
-    /**
-     * 유저 고유 번호
-     */
-    userKey: str
-    /**
-     * 접속 IP
-     */
-    userIp: str
-    /**
-     * 유저 고유 인덱스
-     */
-    index: number;
-    /**
-     * 유저 종류
-     */
-    category: str
-}
+class CulturelandUser:
+    def __init__(self, phone: str, safe_level: int, safe_password: bool, register_date: int, user_id: str, user_key: str, user_ip: str, index: int, category: str):
+        self.__phone = phone
+        self.__safe_level = safe_level
+        self.__safe_password = safe_password
+        self.__register_date = register_date
+        self.__user_id = user_id
+        self.__user_key = user_key
+        self.__user_ip = user_ip
+        self.__index = index
+        self.__category = category
 
-export interface CulturelandMember {
-    /**
-     * 컬쳐랜드 ID
-     */
-    id?: str
-    /**
-     * 멤버의 이름 | `홍*동`
-     */
-    name?: str
-    /**
-     * 멤버의 인증 등급
-     */
-    verificationLevel?: "본인인증";
-}
+    @property
+    def phone(self):
+        """
+        휴대폰 번호
+        """
+        return self.__phone
 
-export type CashLogsResponse = {
-    item: {
-        accDate: string,
-        memberCode: string,
-        outAmount: string,
-        balance: string,
-        inAmount: string,
-        NUM: string,
-        Note: string,
-        accTime: string,
-        memberName: string,
-        accType: string,
-        safeAmount: string
-    }
-}[];
+    @property
+    def safe_level(self):
+        """
+        안심금고 레벨
+        """
+        return self.__safe_level
 
-export interface CulturelandCashLog {
-    /**
-     * 내역 제목
-     */
-    title: string,
-    /**
-     * 사용 가맹점 코드
-     */
-    merchantCode: string,
-    /**
-     * 사용 가맹점 이름
-     */
-    merchantName: string,
-    /**
-     * 사용 금액
-     */
-    amount: number,
-    /**
-     * 사용 후 남은 잔액
-     */
-    balance: number,
-    /**
-     * 사용 종류
-     */
-    spendType: "사용" | "사용취소" | "충전",
-    /**
-     * 사용 시각
-     */
-    timestamp: number
-};
+    @property
+    def safe_password(self):
+        """
+        안심금고 비밀번호 여부
+        """
+        return self.__safe_password
 
-export interface CulturelandLogin {
-    /**
-     * 컬쳐랜드 ID
-     */
-    userId: str
-    /**
-     * 로그인 유지 쿠키
-     */
-    keepLoginConfig: str
-}"""
+    @property
+    def register_date(self):
+        """
+        가입 시각 (Unix Timestamp)
+        """
+        return self.__register_date
+
+    @property
+    def user_id(self):
+        """
+        컬쳐랜드 ID
+        """
+        return self.__user_id
+
+    @property
+    def user_key(self):
+        """
+        유저 고유 번호
+        """
+        return self.__user_key
+
+    @property
+    def user_ip(self):
+        """
+        접속 IP
+        """
+        return self.__user_ip
+
+    @property
+    def index(self):
+        """
+        유저 고유 인덱스
+        """
+        return self.__index
+
+    @property
+    def category(self):
+        """
+        유저 종류
+        """
+        return self.__category
+
+class CulturelandMember:
+    def __init__(self, id: Optional[str], name: Optional[str], verification_level: Optional[str]):
+        self.__id = id
+        self.__name = name
+        self.__verification_level = verification_level
+
+    @property
+    def id(self):
+        """
+        컬쳐랜드 ID
+        """
+        return self.__id
+
+    @property
+    def name(self):
+        """
+        멤버의 이름 | `홍*동`
+        """
+        return self.__name
+
+    @property
+    def verification_level(self):
+        """
+        멤버의 인증 등급
+        """
+        return self.__verification_level
+
+class CashLogItem:
+    accDate: str
+    memberCode: str
+    outAmount: str
+    balance: str
+    inAmount: str
+    NUM: str
+    Note: str
+    accTime: str
+    memberName: str
+    accType: str
+    safeAmount: str
+
+@dataclass
+class CashLogsResponse:
+    item: CashLogItem
+
+class CulturelandCashLog:
+    def __init__(self, title: str, merchant_code: str, merchant_name: str, amount: int, balance: int, spend_type: Literal["사용", "사용취소", "충전"], timestamp: int):
+        self.__title = title
+        self.__merchant_code = merchant_code
+        self.__merchant_name = merchant_name
+        self.__amount = amount
+        self.__balance = balance
+        self.__spend_type = spend_type
+        self.__timestamp = timestamp
+
+    @property
+    def title(self):
+        """
+        내역 제목
+        """
+        return self.__title
+
+    @property
+    def merchant_code(self):
+        """
+        사용 가맹점 코드
+        """
+        return self.__merchant_code
+
+    @property
+    def merchant_name(self):
+        """
+        사용 가맹점 이름
+        """
+        return self.__merchant_name
+
+    @property
+    def amount(self):
+        """
+        사용 금액
+        """
+        return self.__amount
+
+    @property
+    def balance(self):
+        """
+        사용 후 남은 잔액
+        """
+        return self.__balance
+
+    @property
+    def spend_type(self):
+        """
+        사용 종류
+
+        `사용` | `사용취소` | `충전`
+        """
+        return self.__spend_type
+
+    @property
+    def timestamp(self):
+        """
+        사용 시각 (Unix Timestamp)
+        """
+        return self.__timestamp
+
+class CulturelandLogin:
+    def __init__(self, user_id: str, keep_login_info: str):
+        self.__user_id = user_id
+        self.__keep_login_info = keep_login_info
+
+    @property
+    def user_id(self):
+        """
+        컬쳐랜드 ID
+        """
+        return self.__user_id
+
+    @property
+    def keep_login_info(self):
+        """
+        로그인 유지 쿠키
+        """
+        return self.__keep_login_info
