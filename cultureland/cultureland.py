@@ -4,9 +4,10 @@ import os
 import re
 import httpx
 from datetime import datetime
-from typing import Optional, Union
+from typing import Optional
 from urllib import parse
 from bs4 import BeautifulSoup
+from . import version, repository_url
 from .mTranskey import mTranskey
 from .pin import Pin
 from ._types import *
@@ -26,7 +27,7 @@ class Cultureland:
         self.__client = client or httpx.AsyncClient(
             base_url="https://m.cultureland.co.kr",
             headers={
-                "User-Agent": "cultureland.py/1.0.0"
+                "User-Agent": f"cultureland.py/{version} (+{repository_url})"
             }
         )
 

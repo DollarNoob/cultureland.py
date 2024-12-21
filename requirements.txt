@@ -1,0 +1,4 @@
+beautifulsoup4
+httpx==0.24.1
+pillow==11.0.0
+pycryptodome==3.20.0

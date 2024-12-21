@@ -1,0 +1,28 @@
+[build-system]
+requires = ["setuptools"]
+
+[project]
+name = "cultureland.py"
+version = "0.0.1"
+authors = [
+  { name="DollarNoob", email="dollar3795@hotmail.com" },
+]
+description = "컬쳐랜드 모바일웹을 자동화해주는 비공식 라이브러리입니다."
+readme = "README.md"
+requires-python = ">=3.8"
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "License :: OSI Approved :: GNU General Public License v3 (GPLv3)",
+    "Operating System :: OS Independent",
+    "Programming Language :: Python :: 3",
+]
+dependencies = [
+    "beautifulsoup4",
+    "httpx==0.24.1",
+    "pillow==11.0.0",
+    "pycryptodome==3.20.0",
+]
+
+[project.urls]
+Homepage = "https://github.com/DollarNoob/cultureland.py"
+Issues = "https://github.com/DollarNoob/cultureland.py/issues"
