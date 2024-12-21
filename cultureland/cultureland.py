@@ -7,7 +7,6 @@ from datetime import datetime
 from typing import Optional
 from urllib import parse
 from bs4 import BeautifulSoup
-from . import version, repository_url
 from .mTranskey import mTranskey
 from .pin import Pin
 from ._types import *

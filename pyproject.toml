@@ -3,7 +3,7 @@ requires = ["setuptools"]
 
 [project]
 name = "cultureland.py"
-version = "0.0.1"
+version = "0.0.3"
 authors = [
   { name="DollarNoob", email="dollar3795@hotmail.com" },
 ]
