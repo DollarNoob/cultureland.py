@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import Literal, Optional
-from pin import Pin
+from .pin import Pin
 
 @dataclass
 class VoucherResultItem:
@@ -212,6 +212,7 @@ class CulturelandGift:
         """
         return self.__url
 
+@dataclass
 class GiftVO:
     maxAmount: int
     custCd: None
@@ -474,6 +475,7 @@ class CulturelandMember:
         """
         return self.__verification_level
 
+@dataclass
 class CashLogItem:
     accDate: str
     memberCode: str
@@ -486,10 +488,6 @@ class CashLogItem:
     memberName: str
     accType: str
     safeAmount: str
-
-@dataclass
-class CashLogsResponse:
-    item: CashLogItem
 
 class CulturelandCashLog:
     def __init__(self, title: str, merchant_code: str, merchant_name: str, amount: int, balance: int, spend_type: Literal["사용", "사용취소", "충전"], timestamp: int):

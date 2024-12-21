@@ -1,8 +1,8 @@
 import asyncio
 import os
 from dotenv import load_dotenv
-from cultureland import Cultureland
-from pin import Pin
+from src.cultureland import Cultureland
+from src.pin import Pin
 
 load_dotenv()
 
@@ -26,6 +26,16 @@ async def main():
 
     user_info = await client.get_user_info()
     print(user_info.__dict__)
+
+    member_info = await client.get_member_info()
+    print(member_info.__dict__)
+
+    cash_logs = await client.get_culture_cash_logs(30)
+    print(len(cash_logs))
+
+    gift_limit = await client.get_gift_limit()
+    print("Gift Limit:", gift_limit.limit)
+    print("Remaining Limit:", gift_limit.remain)
 
     balance = await client.get_balance()
     print("Balance:", balance.balance)

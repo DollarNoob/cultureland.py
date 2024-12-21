@@ -7,9 +7,9 @@ from datetime import datetime
 from typing import Optional, Union
 from urllib import parse
 from bs4 import BeautifulSoup
-from mTranskey import mTranskey
-from pin import Pin
-from _types import *
+from .mTranskey import mTranskey
+from .pin import Pin
+from ._types import *
 
 class Cultureland:
     """
@@ -410,16 +410,17 @@ class Cultureland:
 
         limit_info_request = await self.__client.post("/gft/chkGiftLimitAmt.json")
 
-        limit_info = GiftLimitResponse(limit_info_request.json())
+        limit_info = GiftLimitResponse(**limit_info_request.json())
         if limit_info.errMsg != "정상":
             if not limit_info.errMsg:
                 raise Exception("잘못된 응답이 반환되었습니다.")
             else:
                 raise Exception(limit_info.errMsg)
 
+        gift_vo = GiftVO(**limit_info.giftVO)
         return CulturelandGiftLimit(
-            remain=limit_info.giftVO.ccashRemainAmt,
-            limit=limit_info.giftVO.ccashLimitAmt
+            remain=gift_vo.ccashRemainAmt,
+            limit=gift_vo.ccashLimitAmt
         )
 
     async def get_user_info(self):
@@ -489,7 +490,7 @@ class Cultureland:
         if "meTop_info" not in member_info:
             raise Exception("멤버 정보를 가져올 수 없습니다.")
 
-        member_data = BeautifulSoup(member_info) # 멤버 정보 HTML 파싱
+        member_data = BeautifulSoup(member_info, "html.parser") # 멤버 정보 HTML 파싱
         member_data = member_data.find("div", id="meTop_info")
 
         span = member_data.find("span")
@@ -512,7 +513,7 @@ class Cultureland:
             * page (int): 페이지 (default: 1)
 
         ```py
-        # 최근 30일간의 내역 중 1페이지의 내역
+        # 최근 30일간의 내역 중 1페이지(최대 20개)의 내역
         await client.get_culture_cash_logs(30, 20, 1)
         ```
 
@@ -541,17 +542,21 @@ class Cultureland:
             }
         )
 
-        cash_logs = list(map(CashLogsResponse, cash_logs_request.json()))
+        cash_logs_json = cash_logs_request.json()
         cultureland_cash_logs: list[CulturelandCashLog] = []
-        for log in cash_logs:
+        if len(cash_logs_json) == 0 or cash_logs_json[0].get("item").get("cnt") == "0":
+            return cultureland_cash_logs
+
+        for cash_log in cash_logs_json:
+            item = CashLogItem(**cash_log.get("item"))
             cultureland_cash_logs.append(CulturelandCashLog(
-                title=log.item.Note,
-                merchant_code=log.item.memberCode,
-                merchant_name=log.item.memberName,
-                amount=int(log.item.inAmount) - int(log.item.outAmount),
-                balance=int(log.item.balance),
-                spend_type=log.item.accType,
-                timestamp=int(datetime.strptime(log.item.accDate + log.item.accTime, "%Y%m%d%H%M%S").timestamp())
+                title=item.Note,
+                merchant_code=item.memberCode,
+                merchant_name=item.memberName,
+                amount=int(item.inAmount) - int(item.outAmount),
+                balance=int(item.balance),
+                spend_type=item.accType,
+                timestamp=int(datetime.strptime(item.accDate + item.accTime, "%Y%m%d%H%M%S").timestamp())
             ))
 
         return cultureland_cash_logs
