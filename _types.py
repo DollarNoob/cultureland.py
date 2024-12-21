@@ -2,6 +2,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional
 from pin import Pin
 
+@dataclass
 class VoucherResultItem:
     LevyTime: str
     GCSubMemberName: str
@@ -16,9 +17,10 @@ class VoucherResult:
 @dataclass
 class VoucherResponse:
     resultCd: str
-    resultOther: str
     resultMsg: list[VoucherResult]
+    resultOther: Optional[str] = None
 
+@dataclass
 class VoucherResultOther:
     FaceValue: int
     ExpiryDate: str

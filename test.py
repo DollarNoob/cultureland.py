@@ -36,4 +36,8 @@ async def main():
     print("Charge Amount:", charge.amount)
     print("Charge Message:", charge.message)
 
+    # voucher_logs = await client.check_voucher(Pin("3110-1234-1234-5678"))
+    # print("Voucher Info:", voucher_logs.__dict__)
+    # print("Voucher Spend History:", voucher_logs.spend_history[0].__dict__)
+
 asyncio.run(main())

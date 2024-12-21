@@ -1,5 +1,3 @@
-# 작업중입니다.
-
 import base64
 import json
 import os
@@ -90,11 +88,11 @@ class Cultureland:
             raise Exception("정확한 모바일 상품권 번호를 입력하세요.")
 
         transkey = mTranskey(self.__client)
-        servlet_data = transkey.get_servlet_data()
+        servlet_data = await transkey.get_servlet_data()
 
         # <input type="tel" title="네 번째 6자리 입력" id="input-14" name="culturelandInput">
         keypad = transkey.create_keypad(servlet_data, "number", "input-14", "culturelandInput", "tel");
-        keypadLayout = keypad.get_keypad_layout()
+        keypadLayout = await keypad.get_keypad_layout()
         encrypted_pin, encrypted_hmac = keypad.encrypt_password(pin.parts[3], keypadLayout)
 
         payload = {
@@ -117,23 +115,29 @@ class Cultureland:
             }
         )
 
-        voucher_data = VoucherResponse(voucher_data_request.json())
+        voucher_data = VoucherResponse(**voucher_data_request.json())
 
         if voucher_data.resultCd != "0":
             if voucher_data.resultCd == "1":
                 raise Exception("일일 조회수를 초과하셨습니다.")
-            else:
+            elif not voucher_data.resultMsg:
                 raise Exception("잘못된 응답이 반환되었습니다.")
+            else:
+                raise Exception(voucher_data.resultMsg)
 
-        result_other = list(map(VoucherResultOther, json.dumps(voucher_data.resultOther)))
+        result_other_json = json.loads(voucher_data.resultOther)
+        result_other = []
+        for other in result_other_json:
+            result_other.append(VoucherResultOther(**other))
 
         spend_history = []
         for result in voucher_data.resultMsg:
+            item = VoucherResultItem(**result.get("item"))
             spend_history.append(SpendHistory(
-                title=result.item.GCSubMemberName,
-                merchant_name=result.item.Store_name,
-                amount=int(result.item.levyamount),
-                timestamp=int(datetime.strptime(result.item.LevyDate + result.item.LevyTime, "TODO").timestamp())
+                title=item.GCSubMemberName,
+                merchant_name=item.Store_name,
+                amount=int(item.levyamount),
+                timestamp=int(datetime.strptime(item.LevyDate + item.LevyTime, "%Y%m%d%H%M%S").timestamp())
             )) # 파이썬은 숫자가 int 최대치를 초과할 경우 자동으로 long으로 변환
 
         return CulturelandVoucher(
@@ -378,7 +382,7 @@ class Cultureland:
 
             return CulturelandGift(
                 pin=Pin(pin_code),
-                url=("https://m.cultureland.co.kr" + barcode_path)
+                url=str(self.__client.base_url.join(barcode_path))
             )
 
         # 컬쳐랜드상품권(모바일문화상품권) 선물(구매)가 실패 하였습니다.
