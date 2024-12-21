@@ -591,13 +591,13 @@ class Cultureland:
         """
 
         is_idp_login = isinstance(password, str)
-        keep_login_info = None if is_idp_login else parse.unquote(id)
+        keep_login_info = None if is_idp_login else parse.unquote_plus(id)
         _id = id if is_idp_login else None
 
         # KeepLoginConfig 쿠키를 사용할 경우 hCaptcha 값의 유효성을 확인하지 않는 취약점 사용
         self.__client.cookies.set(
             "KeepLoginConfig",
-            base64.urlsafe_b64encode(os.urandom(48)).decode() if is_idp_login else keep_login_info,
+            parse.quote_plus(base64.urlsafe_b64encode(os.urandom(48)).decode() if is_idp_login else keep_login_info),
             "m.cultureland.co.kr"
         )
 
@@ -672,7 +672,7 @@ class Cultureland:
         cookies = login_request.headers.get_list("set-cookie")
         for cookie in cookies:
             if cookie.startswith("KeepLoginConfig="):
-                keep_login_info = parse.unquote(cookie.split(";")[0].split("=")[1])
+                keep_login_info = parse.unquote_plus(cookie.split(";")[0].split("=")[1])
                 break
 
         if not keep_login_info:
