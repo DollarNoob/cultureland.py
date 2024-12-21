@@ -18,7 +18,7 @@ class mTranskey:
         self.encrypted_session_key = rsa_encrypt(self.gen_session_key, CULTURELAND_PUBLICKEY)
         self.allocation_index = random.SystemRandom().randrange(2 ** 32 - 1)
 
-    def get_servlet_data(self):
+    async def get_servlet_data(self):
         """
         트랜스키 서블릿 정보를 받아옵니다.
 
@@ -33,20 +33,20 @@ class mTranskey:
         """
 
         # TK_requestToken
-        request_token_response = self.client.get("https://m.cultureland.co.kr/transkeyServlet?op=getToken&" + str(math.floor(time.time() * 1000)))
+        request_token_response = await self.client.get("/transkeyServlet?op=getToken&" + str(math.floor(time.time() * 1000)))
         request_token_regex = re.compile("var TK_requestToken=([\\d-]+);")
         request_token_match = request_token_regex.search(request_token_response.text)
         request_token = request_token_match[1] if request_token_match else "0"
 
         # initTime
-        init_time_response = self.client.get("https://m.cultureland.co.kr/transkeyServlet?op=getInitTime")
+        init_time_response = await self.client.get("/transkeyServlet?op=getInitTime")
         init_time_regex = re.compile("var initTime='([\\d-]+)';")
         init_time_match = init_time_regex.search(init_time_response.text)
         init_time = init_time_match[1] if init_time_match else "0"
 
         # keyInfo (키 좌표)
-        key_positions_response = self.client.post(
-            "https://m.cultureland.co.kr/transkeyServlet",
+        key_positions_response = await self.client.post(
+            "/transkeyServlet",
             data={
                 "op": "getKeyInfo",
                 "key": self.encrypted_session_key,

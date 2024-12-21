@@ -88,7 +88,7 @@ class Keypad:
 
         return (encrypted, encrypted_hmac)
 
-    def get_keypad_layout(self):
+    async def get_keypad_layout(self):
         """
         키패드 사진을 분석하여 키패드 배열을 가져옵니다.
 
@@ -96,8 +96,8 @@ class Keypad:
             키패드 배열
         """
 
-        key_index_request = self.client.post(
-            "https://m.cultureland.co.kr/transkeyServlet",
+        key_index_request = await self.client.post(
+            "/transkeyServlet",
             data={
                 "op": "getKeyIndex",
                 "name": self.name,
@@ -117,8 +117,8 @@ class Keypad:
         )
         self.key_index = key_index_request.text
 
-        key_image_response = self.client.get(
-            "https://m.cultureland.co.kr/transkeyServlet",
+        key_image_response = await self.client.get(
+            "/transkeyServlet",
             params={
                 "op": "getKey",
                 "name": self.name,

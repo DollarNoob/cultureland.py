@@ -24,9 +24,15 @@ class Cultureland:
     __userInfo: str
 
     def __init__(self, client: Optional[httpx.Client] = None):
-        self.__client = client or httpx.AsyncClient(headers={
-            "User-Agent": "cultureland.py/1.0.0"
-        })
+        self.__client = client or httpx.AsyncClient(
+            base_url="https://m.cultureland.co.kr",
+            headers={
+                "User-Agent": "cultureland.py/1.0.0"
+            }
+        )
+
+        if client:
+            self.__client._base_url = "https://m.cultureland.co.kr"
 
     @property
     def client(self):
@@ -78,7 +84,7 @@ class Cultureland:
         }
 
         voucher_data_request = await self.client.post(
-            "https://m.cultureland.co.kr/vchr/getVoucherCheckMobileUsed.json",
+            "/vchr/getVoucherCheckMobileUsed.json",
             data=payload,
             headers={
                 "Referer": "https://m.cultureland.co.kr/vchr/voucherUsageGiftM.do"
@@ -128,7 +134,7 @@ class Cultureland:
         if not await self.is_login():
             raise Exception("로그인이 필요한 서비스 입니다.")
 
-        balance_request = await self.client.post("https://m.cultureland.co.kr/tgl/getBalance.json")
+        balance_request = await self.client.post("/tgl/getBalance.json")
 
         balance = BalanceResponse(**balance_request.json())
         if balance.resultMessage != "성공":
@@ -143,11 +149,11 @@ class Cultureland:
             total_balance=int(balance.myCash)
         )
 
-    def charge(self):
-        self.client.get("https://m.cultureland.co.kr/csh/cshGiftCard.do")
+    async def charge(self):
+        await self.client.get("/csh/cshGiftCard.do")
 
         transkey = mTranskey(self.client)
-        servlet_data = transkey.get_servlet_data()
+        servlet_data = await transkey.get_servlet_data()
 
         inputs = {
             "seedKey": transkey.encrypted_session_key,
@@ -159,7 +165,7 @@ class Cultureland:
 
         # <input type="password" name="{scr4}" id="{txtScr4}">
         keypad = transkey.create_keypad(servlet_data, "number", txtScr4, "scr14")
-        keypad_layout = keypad.get_keypad_layout()
+        keypad_layout = await keypad.get_keypad_layout()
         [encrypted_pin, encrypted_hmac] = keypad.encrypt_password("4234", keypad_layout)
 
         # inputs = {}
@@ -178,15 +184,15 @@ class Cultureland:
         inputs["transkey_" + txtScr4] = encrypted_pin
         inputs["transkey_HM_" + txtScr4] = encrypted_hmac
 
-        charge_response = self.client.post(
-            "https://m.cultureland.co.kr/csh/cshGiftCardProcess.do", # 모바일문화상품권
+        charge_response = await self.client.post(
+            "/csh/cshGiftCardProcess.do", # 모바일문화상품권
             data=inputs,
             follow_redirects=False
         )
 
         print(charge_response.status_code)
         # return
-        charge_result_response = self.client.get("https://m.cultureland.co.kr" + charge_response.headers.get("location"))
+        charge_result_response = await self.client.get(charge_response.headers.get("location"))
 
         # const chargeResult: string = await chargeResultRequest.text(); // 충전 결과 받아오기
 
@@ -202,7 +208,7 @@ class Cultureland:
             로그인 여부
         """
 
-        is_login_request = await self.client.post("https://m.cultureland.co.kr/mmb/isLogin.json")
+        is_login_request = await self.client.post("/mmb/isLogin.json")
         is_login = is_login_request.json()
         return is_login
 
@@ -210,7 +216,7 @@ class Cultureland:
         self.client.cookies.set("KeepLoginConfig", keepLoginInfo, "m.cultureland.co.kr")
 
         user_id_request = await self.client.get(
-            "https://m.cultureland.co.kr/mmb/loginMain.do",
+            "/mmb/loginMain.do",
             headers={
                 "Referer": "https://m.cultureland.co.kr/index.do"
             }
@@ -223,7 +229,7 @@ class Cultureland:
             raise Exception("입력하신 로그인 유지 정보는 만료된 정보입니다.")
 
         login_request = await self.client.post(
-            "https://m.cultureland.co.kr/mmb/loginProcess.do",
+            "/mmb/loginProcess.do",
             headers={
                 "Referer": "https://m.cultureland.co.kr/mmb/loginMain.do"
             },

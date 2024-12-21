@@ -14,6 +14,6 @@ async def main():
     print("is currently logged in:", await client.is_login())
     balance = await client.get_balance()
     print("balance:", balance.__dict__)
-    print("charge:", client.charge())
+    print("charge:", await client.charge())
 
 asyncio.run(main())
