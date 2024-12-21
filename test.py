@@ -46,6 +46,15 @@ async def main():
     print("Charge Amount:", charge.amount)
     print("Charge Message:", charge.message)
 
+    charge = await client.charge(
+        Pin("3110-1234-1234-5679"),
+        Pin("3110-1234-1234-5670")
+    )
+    print(f"Finalized {len(charge)} charges")
+    print("Charge1 Amount:", charge[0].amount)
+    print("Charge1 Message:", charge[0].message)
+    print("Charge2 Amount:", charge[1].amount)
+    print("Charge2 Message:", charge[1].message)
     # voucher_logs = await client.check_voucher(Pin("3110-1234-1234-5678"))
     # print("Voucher Info:", voucher_logs.__dict__)
     # print("Voucher Spend History:", voucher_logs.spend_history[0].__dict__)

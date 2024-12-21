@@ -181,13 +181,13 @@ class Cultureland:
             total_balance=int(balance.myCash)
         )
 
-    async def charge(self, pins: Union[Pin, list[Pin]]):
+    async def charge(self, *pins: Pin):
         """
         컬쳐랜드상품권(모바일문화상품권) 및 문화상품권(18자리)을 컬쳐캐쉬로 충전합니다.
         지류/온라인문화상품권(18자리)은 2022.12.31 이전 발행 건만 충전 가능합니다.
 
         파라미터:
-            * pins (Pin | list[Pin]): 상품권의 핀번호
+            * *pins (Pin): 상품권의 핀번호
 
         ```py
         # 한 개의 핀번호 충전
@@ -195,10 +195,10 @@ class Cultureland:
         print(charge_one.message) # 충전 완료
 
         # 여러개의 핀번호 충전
-        charge_many = await client.charge([
+        charge_many = await client.charge(
             Pin("3110-0123-4567-8902"),
             Pin("3110-0123-4567-8903")
-        ])
+        )
         print(charge_many[0].message) # 충전 완료
         print(charge_many[1].message) # 상품권지갑 보관
         ```
@@ -210,9 +210,6 @@ class Cultureland:
 
         if not await self.is_login():
             raise Exception("로그인이 필요한 서비스 입니다.")
-
-        if not isinstance(pins, list):
-            pins = [ pins ]
 
         if len(pins) == 0 or len(pins) > 10:
             raise ValueError("핀번호는 1개 이상, 10개 이하여야 합니다.")
