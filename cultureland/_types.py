@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional
 from .pin import Pin
 
-version = "0.0.3"
+version = "0.0.4"
 repository_url = "https://github.com/DollarNoob/cultureland.py"
 
 @dataclass
@@ -121,20 +121,20 @@ class CulturelandVoucher:
 @dataclass
 class BalanceResponse:
     safeDelYn: Literal["Y", "N"]
-    memberKind: str
+    memberKind: str # H | M | str
     casChargeYN: Literal["Y", "N"]
     resultCode: str
     resultMessage: str
-    blnWaitCash: str
     walletPinYN: Literal["Y", "N"]
     bnkAmt: str
     remainCash: str
-    transCash: str
     kycYN: str
     myCash: str
     blnAmt: str
     walletYN: Literal["Y", "N"]
     limitCash: str
+    blnWaitCash: Optional[str] = None
+    transCash: Optional[str] = None
 
 class CulturelandBalance:
     def __init__(self, balance: int, safe_balance: int, total_balance: int):
@@ -186,7 +186,7 @@ class CulturelandCharge:
 
 @dataclass
 class PhoneInfoResponse:
-    recvType: str
+    recvType: str # H | M | str
     email2: str
     errCd: str
     email1: str
@@ -217,12 +217,12 @@ class CulturelandGift:
 
 @dataclass
 class GiftVO:
-    maxAmount: int
     custCd: None
+    maxAmount: int
     balanceAmt: int
     safeAmt: int
-    cashGiftRemainAmt: int
     cashGiftSumGift: int
+    cashGiftRemainAmt: int
     cashGiftNoLimitYn: Literal["Y", "N"]
     cashGiftNoLimitUserYn: str
     cashGiftLimitAmt: int
@@ -297,28 +297,28 @@ class GiftVO:
     cancelCnt: int
     transCnt: int
     successCnt: int
-    nbankMGiftRemainDay: int
-    nbankNoLimitUserYn: str
+    ccashSumGift: int
+    nbankSumVacnt: int
+    nbankLimitAmt: int
+    nbankSumGift: int
+    ccashLimitAmt: int
+    rtimeLimitAmt: int
+    rtimeSumGift: int
     nbankNoLimitYn: Literal["Y", "N"]
-    ccashNoLimitUserYn: str
+    nbankNoLimitUserYn: str
+    ccashNoLimitYn: Literal["Y", "N"]
+    nbankMGiftRemainDay: int
+    rtimeMGiftRemainMon: int
+    rtimeNoLimitYn: Literal["Y", "N"]
+    rtimeMGiftRemainDay: int
+    ccashMGiftRemainDay: int
+    rtimeNoLimitUserYn: str
     ccashRemainAmt: int
     ccashMGiftRemainMon: int
-    ccashMGiftRemainDay: int
-    nbankRemainAmt: int
-    rtimeNoLimitUserYn: str
-    ccashNoLimitYn: Literal["Y", "N"]
-    nbankMGiftRemainMon: int
-    rtimeMGiftRemainMon: int
-    rtimeMGiftRemainDay: int
-    rtimeNoLimitYn: Literal["Y", "N"]
     rtimeRemainAmt: int
-    nbankLimitAmt: int
-    rtimeSumGift: int
-    ccashLimitAmt: int
-    nbankSumGift: int
-    nbankSumVacnt: int
-    rtimeLimitAmt: int
-    ccashSumGift: int
+    nbankRemainAmt: int
+    ccashNoLimitUserYn: str
+    nbankMGiftRemainMon: int
 
 @dataclass
 class GiftLimitResponse:
@@ -347,46 +347,46 @@ class CulturelandGiftLimit:
 
 @dataclass
 class UserInfoResponse:
-    Del_Yn: Literal["Y", "N"]
     callUrl: str
-    custCd: str
+    custCd: str # H | M | str
     certVal: str
     backUrl: str
     authDttm: str
     resultCode: str
-    user_key: str
-    Status_M: str
     Phone: str
-    Status_Y: str
-    Status_W: str
-    Status: str
-    SafeLevel: str
-    Status_D: str
-    CashPwd: str
-    RegDate: str
     resultMessage: str
     userId: str
     userKey: str
-    Proc_Date: str
     size: int
-    user_id: str
     succUrl: str
     userIp: str
-    Mobile_Yn: Literal["Y", "N"]
-    idx: str
     category: str
+    user_key: Optional[str] = None
+    Status_M: Optional[str] = None
+    Status_Y: Optional[str] = None
+    Status_W: Optional[str] = None
+    Status: Optional[str] = None
+    SafeLevel: Optional[str] = None
+    Status_D: Optional[str] = None
+    CashPwd: Optional[str] = None
+    RegDate: Optional[str] = None
+    Proc_Date: Optional[str] = None
+    user_id: Optional[str] = None
+    Mobile_Yn: Optional[Literal["Y", "N"]] = None
+    Del_Yn: Optional[Literal["Y", "N"]] = None
+    idx: Optional[str] = None
 
 class CulturelandUser:
-    def __init__(self, phone: str, safe_level: int, safe_password: bool, register_date: int, user_id: str, user_key: str, user_ip: str, index: int, category: str):
+    def __init__(self, phone: str, safe_level: int, safe_password: bool, user_id: str, user_key: int, user_ip: str, category: str, register_date: Optional[int] = None, index: Optional[int] = None):
         self.__phone = phone
         self.__safe_level = safe_level
         self.__safe_password = safe_password
-        self.__register_date = register_date
         self.__user_id = user_id
         self.__user_key = user_key
         self.__user_ip = user_ip
-        self.__index = index
         self.__category = category
+        self.__register_date = register_date
+        self.__index = index
 
     @property
     def phone(self):
@@ -410,13 +410,6 @@ class CulturelandUser:
         return self.__safe_password
 
     @property
-    def register_date(self):
-        """
-        가입 시각 (Unix Timestamp)
-        """
-        return self.__register_date
-
-    @property
     def user_id(self):
         """
         컬쳐랜드 ID
@@ -438,21 +431,28 @@ class CulturelandUser:
         return self.__user_ip
 
     @property
-    def index(self):
-        """
-        유저 고유 인덱스
-        """
-        return self.__index
-
-    @property
     def category(self):
         """
         유저 종류
         """
         return self.__category
 
+    @property
+    def register_date(self):
+        """
+        가입 시각 (Unix Timestamp)
+        """
+        return self.__register_date
+
+    @property
+    def index(self):
+        """
+        유저 고유 인덱스
+        """
+        return self.__index
+
 class CulturelandMember:
-    def __init__(self, id: Optional[str], name: Optional[str], verification_level: Optional[str]):
+    def __init__(self, id: Optional[str], name: Optional[str], verification_level: Optional[Literal["본인인증", "휴대폰 인증", "이메일 인증"]]):
         self.__id = id
         self.__name = name
         self.__verification_level = verification_level
@@ -475,6 +475,8 @@ class CulturelandMember:
     def verification_level(self):
         """
         멤버의 인증 등급
+
+        `본인인증` | `휴대폰 인증` | `이메일 인증`
         """
         return self.__verification_level
 

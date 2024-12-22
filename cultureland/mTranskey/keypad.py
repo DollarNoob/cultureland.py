@@ -6,6 +6,7 @@ from typing import Literal
 from io import BytesIO
 from PIL import Image
 from .seed import Seed
+from ._types import TranskeyData, ServletData
 
 SPECIAL_CHARS = ["`", "~", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=", "+", "[", "{", "]", "}", "\\", "|", ";", ":", "/", "?", ",", "<", ".", ">", "'", "\"", "+", "-", "*", "/"]
 LOWER_CHARS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", "z", "x", "c", "v", "b", "n", "m"]
@@ -22,10 +23,10 @@ NUMBER_KEY_HASHES = [
     "da4d4c4be55781ce54f88e1f5550e72d", # 9
     "6fc0f70702615ba21a5cdd09ec45c3a0" # empty
 ]
-BLANK_KEY_HASH = "10f261e7833e4df8108698d0ac802f89" # qwerty 키보드 빈칸
+BLANK_KEY_HASH = "10f261e7833e4df8108698d0ac802f89" # qwerty 키패드 빈칸
 
 class Keypad:
-    def __init__(self, transkey_data: dict, servlet_data: dict, client: httpx.Client, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type: str):
+    def __init__(self, transkey_data: TranskeyData, servlet_data: ServletData, client: httpx.AsyncClient, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type: str):
         self.transkey_data = transkey_data
         self.servlet_data = servlet_data
         self.client = client
@@ -40,8 +41,8 @@ class Keypad:
         비밀번호를 키패드 배열에 따라 암호화합니다.
 
         파라미터:
-            * pw: 비밀번호
-            * layout: 키패드 배열
+            * pw (str): 비밀번호
+            * layout (list[int]): 키패드 배열
 
         반환값:
             (암호화된 비밀번호, 암호화된 비밀번호의 HMAC 해시값)
@@ -50,16 +51,15 @@ class Keypad:
         encrypted = ""
 
         for val in pw:
-            key_info = self.servlet_data.get("key_info")
             if self.keyboard_type == "qwerty":
-                keyboard = key_info[0]
+                keyboard = self.servlet_data.qwerty_info
             else:
-                keyboard = key_info[1]
+                keyboard = self.servlet_data.number_info
 
             keyboard_index = layout.index(
-                SPECIAL_CHARS.index(val) if val in SPECIAL_CHARS # val이 특수문자라면 특수문자 키보드에서 val의 위치
-                else LOWER_CHARS.index(val.lower()) if self.keyboard_type == "qwerty" # qwerty 키보드라면 qwerty 키보드에서 val의 위치
-                else int(val) # 숫자 키보드에서 val의 위치
+                SPECIAL_CHARS.index(val) if val in SPECIAL_CHARS # val이 특수문자라면 특수문자 키패드에서 val의 위치
+                else LOWER_CHARS.index(val.lower()) if self.keyboard_type == "qwerty" # qwerty 키패드라면 qwerty 키패드에서 val의 위치
+                else int(val) # 숫자 키패드에서 val의 위치
             )
 
             try:
@@ -68,21 +68,21 @@ class Keypad:
                 raise Exception("입력할 수 없는 키가 입력되었습니다.") # 키패드에 존재하지 않는 키
 
             geo = list(map(str, geo))
-            if self.keyboard_type == "qwerty": # qwerty 키보드라면
+            if self.keyboard_type == "qwerty": # qwerty 키패드라면
                 if val in SPECIAL_CHARS: # 특수문자라면
                     geo_string = "s " + " ".join(geo)
                 elif val == val.upper(): # 대문자라면
                     geo_string = "u " + " ".join(geo)
                 else: # 소문자 또는 숫자라면
                     geo_string = "l " + " ".join(geo)
-            else: # 숫자 키보드라면
+            else: # 숫자 키패드라면
                 geo_string = " ".join(geo)
 
-            encrypted += "$" + Seed.SeedEnc(geo_string, self.transkey_data.get("session_key"))
+            encrypted += "$" + Seed.SeedEnc(geo_string, self.transkey_data.get_session_key())
 
         encrypted_hmac = hmac.new(
             msg=encrypted.encode(),
-            key=self.transkey_data.get("gen_session_key").encode(),
+            key=self.transkey_data.generated_session_key.encode(),
             digestmod=hashlib.sha256
         ).hexdigest()
 
@@ -106,12 +106,12 @@ class Keypad:
                 "fieldType": self.field_type,
                 "inputName": self.input_name,
                 "parentKeyboard": "false",
-                "transkeyUuid": self.transkey_data.get("transkey_uuid"),
+                "transkeyUuid": self.transkey_data.transkey_uuid,
                 "exE2E": "false",
-                "TK_requestToken": self.servlet_data.get("request_token"),
-                "allocationIndex": self.transkey_data.get("allocation_index"),
+                "TK_requestToken": self.servlet_data.request_token,
+                "allocationIndex": self.transkey_data.allocation_index,
                 "keyIndex": self.key_index,
-                "initTime": self.servlet_data.get("init_time"),
+                "initTime": self.servlet_data.init_time,
                 "talkBack": "true"
             }
         )
@@ -127,12 +127,12 @@ class Keypad:
                 "fieldType": self.field_type,
                 "inputName": self.input_name,
                 "parentKeyboard": "false",
-                "transkeyUuid": self.transkey_data.get("transkey_uuid"),
+                "transkeyUuid": self.transkey_data.transkey_uuid,
                 "exE2E": "false",
-                "TK_requestToken": self.servlet_data.get("request_token"),
-                "allocationIndex": self.transkey_data.get("allocation_index"),
+                "TK_requestToken": self.servlet_data.request_token,
+                "allocationIndex": self.transkey_data.allocation_index,
                 "keyIndex": self.key_index,
-                "initTime": self.servlet_data.get("init_time")
+                "initTime": self.servlet_data.init_time
             }
         )
 
@@ -141,7 +141,7 @@ class Keypad:
 
         for y in range(4 if self.keyboard_type == "qwerty" else 3): # 키패드 세로 칸만큼 반복
             for x in range(11 if self.keyboard_type == "qwerty" else 4): # 키패드 가로 칸만큼 반복
-                if self.keyboard_type == "qwerty": # qwerty 키보드라면
+                if self.keyboard_type == "qwerty": # qwerty 키패드라면
                     if (x == 0 and y == 3) or ((x == 9 or x == 10) and y == 3): # shift or backspace
                         continue # 불필요한 키는 건너뛰기
 
@@ -154,7 +154,7 @@ class Keypad:
 
                 keys.append(img)
 
-        layout = []
+        layout: list[int] = []
         i = 0
         for key in keys:
             key_img_bytes = BytesIO()

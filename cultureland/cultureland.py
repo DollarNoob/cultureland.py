@@ -22,7 +22,7 @@ class Cultureland:
     __keep_login_info: str
     __user_info: CulturelandUser
 
-    def __init__(self, client: Optional[httpx.Client] = None):
+    def __init__(self, client: Optional[httpx.AsyncClient] = None):
         self.__client = client or httpx.AsyncClient(
             base_url="https://m.cultureland.co.kr",
             headers={
@@ -91,18 +91,18 @@ class Cultureland:
         servlet_data = await transkey.get_servlet_data()
 
         # <input type="tel" title="네 번째 6자리 입력" id="input-14" name="culturelandInput">
-        keypad = transkey.create_keypad(servlet_data, "number", "input-14", "culturelandInput", "tel");
-        keypadLayout = await keypad.get_keypad_layout()
-        encrypted_pin, encrypted_hmac = keypad.encrypt_password(pin.parts[3], keypadLayout)
+        keypad = transkey.create_keypad(servlet_data, "number", "input-14", "culturelandInput", "tel")
+        keypad_layout = await keypad.get_keypad_layout()
+        encrypted_pin, encrypted_hmac = keypad.encrypt_password(pin.parts[3], keypad_layout)
 
         payload = {
             "culturelandNo": pin.parts[0] + pin.parts[1] + pin.parts[2],
-            "seedKey": transkey.encrypted_session_key,
-            "initTime": servlet_data.get("init_time"),
+            "seedKey": transkey.transkey_data.get_encrypted_session_key(),
+            "initTime": servlet_data.init_time,
             "keyIndex_input-14": keypad.key_index,
             "keyboardType_input-14": keypad.keyboard_type + "Mobile",
             "fieldType_input-14": keypad.field_type,
-            "transkeyUuid": transkey.transkey_uuid,
+            "transkeyUuid": transkey.transkey_data.transkey_uuid,
             "transkey_input-14": encrypted_pin,
             "transkey_HM_input-14": encrypted_hmac
         }
@@ -226,9 +226,9 @@ class Cultureland:
         servlet_data = await transkey.get_servlet_data()
 
         payload = {
-            "seedKey": transkey.encrypted_session_key,
-            "initTime": servlet_data.get("init_time"),
-            "transkeyUuid": transkey.transkey_uuid
+            "seedKey": transkey.transkey_data.get_encrypted_session_key(),
+            "initTime": servlet_data.init_time,
+            "transkeyUuid": transkey.transkey_data.transkey_uuid
         }
 
         for i in range(len(pins)):
@@ -432,12 +432,12 @@ class Cultureland:
             * phone (str): 휴대폰 번호
             * safe_level (int): 안심금고 레벨
             * safe_password (bool): 안심금고 비밀번호 여부
-            * register_date (int): 가입 시각 (Unix Timestamp)
             * user_id (str): 컬쳐랜드 ID
             * user_key (str): 유저 고유 번호
             * user_ip (str): 접속 IP
-            * index (int): 유저 고유 인덱스
             * category (str): 유저 종류
+            * register_date (int | None): 가입 시각 (Unix Timestamp)
+            * index (int | None): 유저 고유 인덱스
         """
 
         if not await self.is_login():
@@ -454,13 +454,13 @@ class Cultureland:
 
         return CulturelandUser(
             phone=user_info.Phone,
-            safe_level=int(user_info.SafeLevel),
-            safe_password=(user_info.CashPwd != "0"),
-            register_date=int(datetime.strptime(user_info.RegDate, "%Y-%m-%d %H:%M:%S.%f").timestamp()),
+            safe_level=(0 if user_info.SafeLevel is None else int(user_info.SafeLevel)),
+            safe_password=(False if user_info.CashPwd is None else user_info.CashPwd != "0"),
+            register_date=(None if user_info.RegDate is None else int(datetime.strptime(user_info.RegDate, "%Y-%m-%d %H:%M:%S.%f").timestamp())),
             user_id=user_info.userId,
-            user_key=user_info.userKey,
+            user_key=int(user_info.userKey),
             user_ip=user_info.userIp,
-            index=int(user_info.idx),
+            index=(None if user_info.idx is None else int(user_info.idx)),
             category=user_info.category
         )
 
@@ -629,12 +629,12 @@ class Cultureland:
             "keepLoginInfo": "" if is_idp_login else keep_login_info,
             "userId": _id,
             "keepLogin": "Y",
-            "seedKey": transkey.encrypted_session_key,
-            "initTime": servlet_data.get("init_time"),
+            "seedKey": transkey.transkey_data.get_encrypted_session_key(),
+            "initTime": servlet_data.init_time,
             "keyIndex_passwd": keypad.key_index,
             "keyboardType_passwd": keypad.keyboard_type + "Mobile",
             "fieldType_passwd": keypad.field_type,
-            "transkeyUuid": transkey.transkey_uuid,
+            "transkeyUuid": transkey.transkey_data.transkey_uuid,
             "transkey_passwd": encrypted_password,
             "transkey_HM_passwd": encrypted_hmac
         }

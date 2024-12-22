@@ -7,29 +7,26 @@ import httpx
 
 from typing import Literal
 from .keypad import Keypad
-from .rsa import CULTURELAND_PUBLICKEY, rsa_encrypt
+from ._types import TranskeyData, ServletData
 
 class mTranskey:
-    def __init__(self, client: httpx.Client):
+    def __init__(self, client: httpx.AsyncClient):
         self.client = client
-        self.transkey_uuid = os.urandom(32).hex()
-        self.gen_session_key = os.urandom(8).hex()
-        self.session_key = [int(self.gen_session_key[i], 16) for i in range(16)]
-        self.encrypted_session_key = rsa_encrypt(self.gen_session_key, CULTURELAND_PUBLICKEY)
-        self.allocation_index = random.SystemRandom().randrange(2 ** 32 - 1)
+        self.transkey_data = TranskeyData(
+            transkey_uuid=os.urandom(32).hex(),
+            generated_session_key=os.urandom(8).hex(),
+            allocation_index=random.SystemRandom().randrange(2 ** 32 - 1)
+        )
 
     async def get_servlet_data(self):
         """
         트랜스키 서블릿 정보를 받아옵니다.
 
-        반환값: {
-            "request_token": `TK_requestToken`,
-            "init_time": `initTime`,
-            "key_info": [
-                `qwerty 키보드 키 좌표`,
-                `숫자 키보드 키 좌표`
-            ]
-        }
+        반환값:
+            * request_token (str): `TK_requestToken`
+            * init_time (str): `initTime`
+            * qwerty_info (list[int]): qwerty 키패드 키 좌표
+            * number_info (list[int]): 숫자 키패드 키 좌표
         """
 
         # TK_requestToken
@@ -49,8 +46,8 @@ class mTranskey:
             "/transkeyServlet",
             data={
                 "op": "getKeyInfo",
-                "key": self.encrypted_session_key,
-                "transkeyUuid": self.transkey_uuid,
+                "key": self.transkey_data.get_encrypted_session_key(),
+                "transkeyUuid": self.transkey_data.transkey_uuid,
                 "useCert": "true",
                 "TK_requestToken": request_token,
                 "mode": "Mobile"
@@ -80,38 +77,30 @@ class mTranskey:
             key = points[0]
             number_info.append([int(key[0]), int(key[1])]) # 키 좌표
 
-        return {
-            "request_token": request_token,
-            "init_time": init_time,
-            "key_info": [
-                qwerty_info,
-                number_info
-            ]
-        }
+        return ServletData(
+            request_token,
+            init_time,
+            qwerty_info,
+            number_info
+        )
 
-    def create_keypad(self, servlet_data, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type = "password"):
+    def create_keypad(self, servlet_data: ServletData, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type = "password"):
         """
         트랜스키 서블릿 정보를 바탕으로 키패드를 생성합니다.
 
         파라미터:
-            * servlet_data: 트랜스키 서블릿 정보 `TK_requestToken` `initTime` `키 좌표`
-            * keyboard_type: 키보드 종류 (`qwerty` | `number`)
-            * name: 키패드 아이디 (`txtScr14`)
-            * input_name: 키패드 이름 (`scr14`)
-            * field_type: 키패드 종류 (`password`)
+            * servlet_data (ServletData): 트랜스키 서블릿 정보 `TK_requestToken` `initTime` `키 좌표`
+            * keyboard_type (str): 키패드 종류 `qwerty` | `number`
+            * name (str): 키패드 아이디 | `txtScr14`
+            * input_name (str): 키패드 이름 | `scr14`
+            * field_type (str): 키패드 종류 | `password`
 
         반환값:
             Keypad
         """
 
         return Keypad(
-            {
-                "transkey_uuid": self.transkey_uuid,
-                "gen_session_key": self.gen_session_key,
-                "session_key": self.session_key,
-                "encrypted_session_key": self.encrypted_session_key,
-                "allocation_index": self.allocation_index
-            },
+            self.transkey_data,
             servlet_data,
             self.client,
             keyboard_type,
