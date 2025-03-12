@@ -11,19 +11,19 @@ from ._types import TranskeyData, ServletData
 SPECIAL_CHARS = ["`", "~", "!", "@", "#", "$", "%", "^", "&", "*", "(", ")", "-", "_", "=", "+", "[", "{", "]", "}", "\\", "|", ";", ":", "/", "?", ",", "<", ".", ">", "'", "\"", "+", "-", "*", "/"]
 LOWER_CHARS = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "0", "q", "w", "e", "r", "t", "y", "u", "i", "o", "p", "a", "s", "d", "f", "g", "h", "j", "k", "l", "z", "x", "c", "v", "b", "n", "m"]
 NUMBER_KEY_HASHES = [
-    "ddab8c8a364fc679c3356634e08bbb3a", # 0
-    "e5e0c69c0773cd04fa3726c048070a2d", # 1
-    "f5ad1500010a17d21b5d745f11e8f416", # 2
-    "272e10c9cd3e03edad4597395566c22f", # 3
-    "defc5b165f4f2c117e8b551a81b57d84", # 4
-    "1e2d32fd1d66cddb4d819c03bf352e58", # 5
-    "37a14c6662f520503836d26fbe9ba8fe", # 6
-    "fa7a03f89600078030a8a930cd8cc0ad", # 7
-    "0ae13319f6139af10cbcca5fd8fa7a47", # 8
-    "da4d4c4be55781ce54f88e1f5550e72d", # 9
-    "6fc0f70702615ba21a5cdd09ec45c3a0" # empty
+    "239a38c2463e82430120570e0a71b0b6", # 0
+    "0246598c40a2ceba0afb34b7e256bb3d", # 1
+    "807ca18d6f1f454b82edad0733ab5039", # 2
+    "4b785ee9fd589e68997927e8734d9a48", # 3
+    "dabe316ee795a0aa9866878716330998", # 4
+    "248e70819a775b669371728f391d0220", # 5
+    "5bbfd356baf3830f97803642e8c6693f", # 6
+    "1513dd2b504c53c764f3fde5dd9aa5f6", # 7
+    "c6845589018515678077282a75b796dd", # 8
+    "ea784a29bfd1f17276320d6148ba67f8", # 9
+    "9c36f62dca0fe9b2174f5129f2a44283" # empty
 ]
-BLANK_KEY_HASH = "10f261e7833e4df8108698d0ac802f89" # qwerty 키패드 빈칸
+BLANK_KEY_HASH = "be2e2eb24d35ec52b7205dc1b8d78b08" # qwerty 키패드 빈칸
 
 class Keypad:
     def __init__(self, transkey_data: TranskeyData, servlet_data: ServletData, client: httpx.AsyncClient, keyboard_type: Literal["qwerty", "number"], name: str, input_name: str, field_type: str):
@@ -158,7 +158,7 @@ class Keypad:
         i = 0
         for key in keys:
             key_img_bytes = BytesIO()
-            key.save(key_img_bytes, "PNG")
+            key.save(key_img_bytes, "BMP")
             key_payload = key_img_bytes.getvalue()
 
             enc = hashlib.md5()
