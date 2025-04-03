@@ -2,7 +2,7 @@ from dataclasses import dataclass
 from typing import Literal, Optional
 from .pin import Pin
 
-version = "0.0.5"
+version = "0.0.6"
 repository_url = "https://github.com/DollarNoob/cultureland.py"
 
 @dataclass
