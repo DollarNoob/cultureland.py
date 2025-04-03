@@ -370,7 +370,7 @@ class Cultureland:
                 raise Exception("선물 결과에서 바코드 URL을 찾을 수 없습니다.")
 
             # 핀번호(바코드 번호)를 가져오기 위해 바코드 정보 요청
-            barcode_path = "/csh/mb.do?code=" + barcode_code
+            barcode_path = "/csh/mb.do?code=" + barcode_code[1]
             barcode_data_request = await self.__client.get(barcode_path)
             barcode_data = barcode_data_request.text
 
@@ -668,7 +668,7 @@ class Cultureland:
             if not error_code:
                 raise Exception("컬쳐랜드 로그인 정책에 따라 로그인이 제한되었습니다.")
             else:
-                raise Exception(f"컬쳐랜드 로그인 정책에 따라 로그인이 제한되었습니다. (제한코드: {error_code})")
+                raise Exception(f"컬쳐랜드 로그인 정책에 따라 로그인이 제한되었습니다. (제한코드: {error_code[1]})")
 
         # 로그인 유지 정보 가져오기
         cookies = login_request.headers.get_list("set-cookie")
