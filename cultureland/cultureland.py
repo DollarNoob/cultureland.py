@@ -606,6 +606,12 @@ class Cultureland:
             # 로그인 메인 페이지에 요청을 보내 SESSION 쿠키를 받아옴
             await self.__client.get("/mmb/loginMain.do")
         else:
+            self.__client.cookies.set(
+                "KeepLoginConfig",
+                parse.quote_plus(keep_login_info),
+                "m.cultureland.co.kr"
+            )
+
             login_main_request = await self.__client.get("/mmb/loginMain.do")
 
             user_id_regex = re.compile('<input type="text" id="txtUserId" name="userId" value="(\\w*)" maxlength="12" oninput="maxLengthCheck\\(this\\);" placeholder="아이디" >')
@@ -614,13 +620,6 @@ class Cultureland:
             if user_id_match is None:
                 raise Exception("입력하신 로그인 유지 정보는 만료된 정보입니다.")
             _id = user_id_match[1]
-
-        # KeepLoginConfig 쿠키를 사용할 경우 hCaptcha 값의 유효성을 확인하지 않는 취약점 사용
-        self.__client.cookies.set(
-            "KeepLoginConfig",
-            parse.quote_plus(base64.urlsafe_b64encode(os.urandom(48)).decode() if is_idp_login else keep_login_info),
-            "m.cultureland.co.kr"
-        )
 
         transkey = mTranskey(self.__client)
         servlet_data = await transkey.get_servlet_data()
